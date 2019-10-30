@@ -6,13 +6,16 @@
 /*   By: ayajrhou <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/10/28 20:17:11 by ayajrhou          #+#    #+#             */
-/*   Updated: 2019/10/30 19:05:06 by ayajrhou         ###   ########.fr       */
+/*   Updated: 2019/10/29 01:47:59 by ayajrhou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#define BUFFER_SIZE 32
-
-#include "get_next_line.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+#define BUFFER_SIZE 60
 char *ft_stock(char *line, char *buff, int i)
 {
 	char *newline;
@@ -73,9 +76,9 @@ int get_next_line(int fd, char **line)
 	static char *str;
 	char *buff;
 	char	*tmp;
-	if (fd <  0 || (!(buff = malloc(sizeof(char) 
-						* BUFFER_SIZE + 1))) || (!(*line = strdup(""))))
-		return (-1);
+
+	buff = malloc(sizeof(char) * BUFFER_SIZE + 1);
+	*line = strdup("");
 	if (ft_yfarini(&line, &str, &buff) == 1)
 		return (1);
 	while ((ret = read(fd, buff, BUFFER_SIZE)))
@@ -101,21 +104,4 @@ int get_next_line(int fd, char **line)
 	free(buff);
 	buff = NULL;
 	return (0);
-}
-int main()
-{
-	char *line;
-	int fd;
-
-	line = NULL;
-	fd = open("get_next_line.c", O_RDONLY);
-	if (fd > 0)
-	{
-		while(get_next_line(fd, &line))
-		{
-			printf("%s\n", line);
-			free(line);
-		}
-		free(line);
-	}
 }
