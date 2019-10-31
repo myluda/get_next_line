@@ -5,19 +5,18 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: ayajrhou <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2019/10/28 20:17:11 by ayajrhou          #+#    #+#             */
-/*   Updated: 2019/10/30 19:05:06 by ayajrhou         ###   ########.fr       */
+/*   Created: 2019/10/31 18:27:30 by ayajrhou          #+#    #+#             */
+/*   Updated: 2019/10/31 18:39:48 by ayajrhou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#define BUFFER_SIZE 32
-
 #include "get_next_line.h"
-char *ft_stock(char *line, char *buff, int i)
+
+char		*ft_stock(char *line, char *buff, int i)
 {
-	char *newline;
-	int len;
-	int j;
+	char	*newline;
+	int		len;
+	int		j;
 
 	j = 0;
 	len = (line ? strlen(line) : 0);
@@ -35,26 +34,41 @@ char *ft_stock(char *line, char *buff, int i)
 		j++;
 	}
 	newline[j] = '\0';
-	return(newline);
+	return (newline);
 }
-int ft_yfarini(char ***line, char **str, char**buff)
+
+int			ft_backslash(char ***line, char **str, char **buff, int i)
 {
-	char *tmp;
-	int i = 0;
+	char	*tmp;
+
+	if ((*str)[i] == '\n')
+	{
+		*(*line) = ft_stock(*(*line), (*str), i);
+		tmp = (*str);
+		(*str) = ft_stock(0, (*str) + i + 1, strlen((*str)) - i - 1);
+		free(tmp);
+		tmp = NULL;
+		free(*buff);
+		*buff = NULL;
+		return (1);
+	}
+	return (0);
+}
+
+int			ft_str(char ***line, char **str, char **buff)
+{
+	int		i;
+	int		c;
+
+	i = 0;
 	if ((*str))
 	{
 		i = 0;
 		while ((*str)[i] && (*str)[i] != '\n')
 			i++;
-		if ((*str)[i] == '\n')
+		c = ft_backslash(line, str, buff, i);
+		if (c == 1)
 		{
-			*(*line) = ft_stock(*(*line), (*str), i);
-			tmp = (*str);
-			(*str) = ft_stock(0, (*str) + i + 1, strlen((*str)) - i - 1);
-			free(tmp);
-			tmp = NULL;
-			free(*buff);
-			*buff = NULL;
 			return (1);
 		}
 		if ((*str)[i] == '\0')
@@ -66,56 +80,76 @@ int ft_yfarini(char ***line, char **str, char**buff)
 	}
 	return (0);
 }
-int get_next_line(int fd, char **line)
+
+int			ft_strdel(char **tmp, char **str, int num, int ret)
 {
-	int i;
-	int ret;
-	static char *str;
-	char *buff;
-	char	*tmp;
-	if (fd <  0 || (!(buff = malloc(sizeof(char) 
-						* BUFFER_SIZE + 1))) || (!(*line = strdup(""))))
-		return (-1);
-	if (ft_yfarini(&line, &str, &buff) == 1)
-		return (1);
-	while ((ret = read(fd, buff, BUFFER_SIZE)))
+	if (*tmp != NULL)
 	{
-		i = 0;
-		if (buff[ret] != -1)
-			buff[ret] = '\0';
-		while(buff[i] && buff[i] != '\n')
-			i++;
-		if (buff[i] == '\n'  || buff[i] == -1)
-		{
-			*line = ft_stock(*line, buff, i);
-			tmp = str;
-			str = ft_stock(str, buff + i + 1, ret - i - 1);
-			free(tmp);
-			tmp = NULL;
-			free(buff);
-			return (1);
-		}
-		if (buff[i] == '\0')
-			*line = ft_stock(*line, buff, i);
+		free(*tmp);
+		*tmp = NULL;
 	}
-	free(buff);
-	buff = NULL;
+	if (num == 2)
+	{
+		if (*str != NULL)
+		{
+			free(*str);
+			*str = NULL;
+		}
+	}
+	return (ret);
+}
+
+int			ft_isnewline(char *buff)
+{
+	int		i;
+
+	i = 0;
+	while (buff[i] && buff[i] != '\n')
+		i++;
+	return (i);
+}
+
+int			ft_read(char ***line, char **buff, char **str, int fd)
+{
+	int		ret;
+	char	*tmp;
+	int		i;
+
+	while ((ret = read(fd, *buff, BUFFER_SIZE)))
+	{
+		if (ret < 0)
+			return (-1);
+		(*buff)[ret] = '\0';
+		i = ft_isnewline(*buff);
+		if ((*buff)[i] == '\n' || (*buff)[i] == -1)
+		{
+			*(*line) = ft_stock(*(*line), *buff, i);
+			tmp = *str;
+			*str = ft_stock(*str, *buff + i + 1, ret - i - 1);
+			return (ft_strdel(&tmp, buff, 2, 1));
+		}
+		if ((*buff)[i] == '\0')
+			*(*line) = ft_stock(*(*line), *buff, i);
+	}
 	return (0);
 }
-int main()
-{
-	char *line;
-	int fd;
 
-	line = NULL;
-	fd = open("get_next_line.c", O_RDONLY);
-	if (fd > 0)
-	{
-		while(get_next_line(fd, &line))
-		{
-			printf("%s\n", line);
-			free(line);
-		}
-		free(line);
-	}
+int			get_next_line(int fd, char **line)
+{
+	int			i;
+	static char	*str;
+	char		*buff;
+
+	if ((fd < 0) || (BUFFER_SIZE < 1) || (BUFFER_SIZE > MAX_INT) ||
+		!(line) || !(buff = malloc(sizeof(char) * BUFFER_SIZE + 1)))
+		return (-1);
+	*line = strdup("");
+	if (ft_str(&line, &str, &buff) == 1)
+		return (1);
+	i = ft_read(&line, &buff, &str, fd);
+	if (i == -1)
+		return (-1);
+	else if (i == 1)
+		return (1);
+	return (ft_strdel(&buff, &buff, 1, 0));
 }
